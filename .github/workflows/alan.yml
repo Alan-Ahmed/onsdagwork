@@ -1,9 +1,9 @@
-name: Environment Specific Deploy
+name: AlanOnsTest
 
 on:
-  push:   # körs vid varje push (alla brancher)
-    branches:
-      - '*'   # fånga alla brancher
+  push:
+    branches: ['*']     # kör på alla brancher
+  workflow_dispatch: {}  # gör att "Run workflow" visas i Actions
 
 jobs:
   deploy:
@@ -16,10 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Show branch and environment
+      - name: Show branch and selected environment
         run: |
-          echo "Branch name: ${{ github.ref_name }}"
-          echo "Environment selected: ${{ job.environment }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Environment: ${{ job.environment }}"
 
       - name: Ensure SERVICE_NAME variable exists
         run: |
