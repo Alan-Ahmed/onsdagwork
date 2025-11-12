@@ -1,21 +1,53 @@
-name: Dummy Environment Print (manual)
+name: Dummy Environment Print
 
 on:
+  push:
+    branches: [main, dev]
   workflow_dispatch:
     inputs:
       env:
         description: "Choose environment"
         required: true
         type: choice
-        options:
-          - DEVELOPMENT
-          - PRODUCTION
+        options: [DEVELOPMENT, PRODUCTION]
 
 jobs:
-  print:
+  # Manuell körning med dropdown
+  print-manual:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # kör i valt environment (måste finnas under Settings → Environments)
     environment: ${{ inputs.env }}
     steps:
-      - name: Print environment
+      - name: Print chosen environment
         run: echo "Deploy to ${{ inputs.env }}"
+
+      - name: Check secret exists
+        run: test -n "${{ secrets.MY_API_KEY }}" || (echo "❌ Secret MY_API_KEY saknas i ${{ inputs.env }}" && exit 1)
+
+      - name: Echo secret directly (masked)
+        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
+
+      - name: Echo secret via env (masked)
+        env:
+          MY_API_KEY: ${{ secrets.MY_API_KEY }}
+        run: echo "From env: $MY_API_KEY"
+
+  # Auto via branch
+  print-auto:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'PRODUCTION' || 'DEVELOPMENT' }}
+    steps:
+      - name: Print auto environment
+        run: echo "Deploy to ${{ job.environment }}"
+
+      - name: Check secret exists
+        run: test -n "${{ secrets.MY_API_KEY }}" || (echo "❌ Secret MY_API_KEY saknas i ${{ job.environment }}" && exit 1)
+
+      - name: Echo secret directly (masked)
+        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
+
+      - name: Echo secret via env (masked)
+        env:
+          MY_API_KEY: ${{ secrets.MY_API_KEY }}
+        run: echo "From env: $MY_API_KEY"
