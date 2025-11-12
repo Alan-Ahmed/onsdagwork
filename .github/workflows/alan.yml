@@ -1,0 +1,16 @@
+name: Dummy Environment Print
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  print:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'PRODUCTION' || 'DEVELOPMENT' }}
+
+    steps:
+      - name: Print environment
+        run: echo "deploy to ${{ job.environment }}"
