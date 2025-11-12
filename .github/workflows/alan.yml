@@ -2,7 +2,7 @@ name: AlanOnsTest
 
 on:
   push:
-    branches: ['*']        # kör på alla brancher
+    branches: ['**']        # alla brancher, även feature/foo
   workflow_dispatch:
     inputs:
       env:
@@ -18,7 +18,7 @@ jobs:
 
     # Manuell körning: inputs.env
     # Push: main => PRODUCTION, annars DEVELOPMENT
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.env || (github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT') }}
+    environment: "${{ github.event_name == 'workflow_dispatch' && inputs.env || (github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT') }}"
 
     steps:
       - name: Checkout code
@@ -39,7 +39,8 @@ jobs:
           echo "SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
 
       - name: Print secret (masked)
-        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
+        run: |
+          echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
       - name: Simulate deployment
         run: |
