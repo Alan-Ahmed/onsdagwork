@@ -2,15 +2,27 @@ name: AlanOnsTest
 
 on:
   push:
-    branches: ['*']     # kör på alla brancher
-  workflow_dispatch: {}  # gör att "Run workflow" visas i Actions
+    branches: ['*']        # kör på alla brancher
+  workflow_dispatch:        # gör att "Run workflow" visas
+    inputs:
+      env:
+        description: "Choose environment"
+        required: true
+        type: choice
+        default: DEVELOPMENT
+        options:
+          - DEVELOPMENT
+          - PRODUCTION
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # välj environment beroende på branch
-    environment: ${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT' }}
+    # Vid manuell körning: använd vald input
+    # Vid push: main => PRODUCTION, annars DEVELOPMENT
+    environment: ${{ github.event_name == 'workflow_dispatch'
+                     && inputs.env
+                     || (github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT') }}
 
     steps:
       - name: Checkout code
@@ -18,24 +30,23 @@ jobs:
 
       - name: Show branch and selected environment
         run: |
+          echo "Event: ${{ github.event_name }}"
           echo "Branch: ${{ github.ref_name }}"
           echo "Environment: ${{ job.environment }}"
 
-      - name: Ensure SERVICE_NAME variable exists
+      - name: Ensure SERVICE_NAME exists in this environment
         run: |
           if [ -z "${{ vars.SERVICE_NAME }}" ]; then
-            echo "❌ ERROR: SERVICE_NAME not set in ${{ job.environment }}." >&2
+            echo "❌ SERVICE_NAME not set for env ${{ job.environment }}" >&2
             exit 1
-          else
-            echo "✅ SERVICE_NAME found: ${{ vars.SERVICE_NAME }}"
           fi
+          echo "✅ SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
 
-      - name: Print secret (masked automatically)
-        run: |
-          echo "API KEY: ${{ secrets.MY_API_KEY }}"
+      - name: Print secret (masked)
+        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
       - name: Simulate deployment
         run: |
-          echo "🚀 Deploying ${{ vars.SERVICE_NAME }} to ${{ job.environment }} environment..."
+          echo "🚀 Deploying ${{ vars.SERVICE_NAME }} to ${{ job.environment }}..."
           sleep 2
           echo "✅ Deployment completed!"
