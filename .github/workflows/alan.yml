@@ -3,26 +3,22 @@ name: AlanOnsTest
 on:
   push:
     branches: ['*']        # kör på alla brancher
-  workflow_dispatch:        # gör att "Run workflow" visas
+  workflow_dispatch:
     inputs:
       env:
         description: "Choose environment"
         required: true
         type: choice
         default: DEVELOPMENT
-        options:
-          - DEVELOPMENT
-          - PRODUCTION
+        options: [DEVELOPMENT, PRODUCTION]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # Vid manuell körning: använd vald input
-    # Vid push: main => PRODUCTION, annars DEVELOPMENT
-    environment: ${{ github.event_name == 'workflow_dispatch'
-                     && inputs.env
-                     || (github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT') }}
+    # Manuell körning: inputs.env
+    # Push: main => PRODUCTION, annars DEVELOPMENT
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.env || (github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT') }}
 
     steps:
       - name: Checkout code
@@ -34,19 +30,19 @@ jobs:
           echo "Branch: ${{ github.ref_name }}"
           echo "Environment: ${{ job.environment }}"
 
-      - name: Ensure SERVICE_NAME exists in this environment
+      - name: Ensure SERVICE_NAME exists
         run: |
           if [ -z "${{ vars.SERVICE_NAME }}" ]; then
-            echo "❌ SERVICE_NAME not set for env ${{ job.environment }}" >&2
+            echo "ERROR: SERVICE_NAME not set for env ${{ job.environment }}" >&2
             exit 1
           fi
-          echo "✅ SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
+          echo "SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
 
       - name: Print secret (masked)
         run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
       - name: Simulate deployment
         run: |
-          echo "🚀 Deploying ${{ vars.SERVICE_NAME }} to ${{ job.environment }}..."
+          echo "Deploying ${{ vars.SERVICE_NAME }} to ${{ job.environment }}..."
           sleep 2
-          echo "✅ Deployment completed!"
+          echo "Deployment completed."
