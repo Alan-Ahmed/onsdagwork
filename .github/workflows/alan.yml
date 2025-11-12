@@ -1,79 +1,41 @@
-name: Dummy Environment Print
+name: Environment Specific Deploy
 
 on:
-  push:
-    branches: [main, dev]
-  workflow_dispatch:
-    inputs:
-      env:
-        description: "Choose environment"
-        required: true
-        type: choice
-        options: [DEVELOPMENT, PRODUCTION]
+  push:   # körs vid varje push (alla brancher)
+    branches:
+      - '*'   # fånga alla brancher
 
 jobs:
-  print-manual:
-    if: github.event_name == 'workflow_dispatch'
+  deploy:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.env }}
-    steps:
-      - name: Print chosen environment
-        run: echo "Deploy to ${{ inputs.env }}"
 
-      - name: Ensure SERVICE_NAME is set (manual)
+    # välj environment beroende på branch
+    environment: ${{ github.ref_name == 'main' && 'PRODUCTION' || 'DEVELOPMENT' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show branch and environment
+        run: |
+          echo "Branch name: ${{ github.ref_name }}"
+          echo "Environment selected: ${{ job.environment }}"
+
+      - name: Ensure SERVICE_NAME variable exists
         run: |
           if [ -z "${{ vars.SERVICE_NAME }}" ]; then
-            echo "ERROR: SERVICE_NAME variable is not set in environment ${{ inputs.env }}." >&2
+            echo "❌ ERROR: SERVICE_NAME not set in ${{ job.environment }}." >&2
             exit 1
+          else
+            echo "✅ SERVICE_NAME found: ${{ vars.SERVICE_NAME }}"
           fi
 
-      - name: Print SERVICE_NAME (manual)
-        run: |
-          echo "Deploying: ${{ vars.SERVICE_NAME }}"
-
-      - name: Check secret exists (manual)
-        run: |
-          test -n "${{ secrets.MY_API_KEY }}" || (echo "ERROR: Secret MY_API_KEY missing in ${{ inputs.env }}" >&2; exit 1)
-
-      - name: Echo secret directly (masked)
+      - name: Print secret (masked automatically)
         run: |
           echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
-      - name: Echo secret via env (masked)
-        env:
-          MY_API_KEY: ${{ secrets.MY_API_KEY }}
+      - name: Simulate deployment
         run: |
-          echo "From env: $MY_API_KEY"
-
-  print-auto:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'PRODUCTION' || 'DEVELOPMENT' }}
-    steps:
-      - name: Print auto environment
-        run: echo "Deploy to ${{ job.environment }}"
-
-      - name: Ensure SERVICE_NAME is set (auto)
-        run: |
-          if [ -z "${{ vars.SERVICE_NAME }}" ]; then
-            echo "ERROR: SERVICE_NAME variable is not set in environment ${{ job.environment }}." >&2
-            exit 1
-          fi
-
-      - name: Print SERVICE_NAME (auto)
-        run: |
-          echo "Deploying: ${{ vars.SERVICE_NAME }}"
-
-      - name: Check secret exists (auto)
-        run: |
-          test -n "${{ secrets.MY_API_KEY }}" || (echo "ERROR: Secret MY_API_KEY missing in ${{ job.environment }}" >&2; exit 1)
-
-      - name: Echo secret directly (masked)
-        run: |
-          echo "API KEY: ${{ secrets.MY_API_KEY }}"
-
-      - name: Echo secret via env (masked)
-        env:
-          MY_API_KEY: ${{ secrets.MY_API_KEY }}
-        run: |
-          echo "From env: $MY_API_KEY"
+          echo "🚀 Deploying ${{ vars.SERVICE_NAME }} to ${{ job.environment }} environment..."
+          sleep 2
+          echo "✅ Deployment completed!"
