@@ -20,24 +20,30 @@ jobs:
       - name: Print chosen environment
         run: echo "Deploy to ${{ inputs.env }}"
 
-      - name: Print repo and environment variable
+      - name: Ensure SERVICE_NAME is set (manual)
         run: |
-          echo "🔹 Repository-level SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
-          echo "🔹 Environment-level SERVICE_NAME (if set): ${{ vars.SERVICE_NAME }}"
-          echo ""
-          echo "If both exist, environment-level value overrides repo variable automatically."
+          if [ -z "${{ vars.SERVICE_NAME }}" ]; then
+            echo "ERROR: SERVICE_NAME variable is not set in environment ${{ inputs.env }}." >&2
+            exit 1
+          fi
 
-      - name: Check secret exists
+      - name: Print SERVICE_NAME (manual)
         run: |
-          test -n "${{ secrets.MY_API_KEY }}" || (echo "❌ Secret MY_API_KEY saknas i ${{ inputs.env }}" && exit 1)
+          echo "Deploying: ${{ vars.SERVICE_NAME }}"
+
+      - name: Check secret exists (manual)
+        run: |
+          test -n "${{ secrets.MY_API_KEY }}" || (echo "ERROR: Secret MY_API_KEY missing in ${{ inputs.env }}" >&2; exit 1)
 
       - name: Echo secret directly (masked)
-        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
+        run: |
+          echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
       - name: Echo secret via env (masked)
         env:
           MY_API_KEY: ${{ secrets.MY_API_KEY }}
-        run: echo "From env: $MY_API_KEY"
+        run: |
+          echo "From env: $MY_API_KEY"
 
   print-auto:
     if: github.event_name == 'push'
@@ -47,21 +53,27 @@ jobs:
       - name: Print auto environment
         run: echo "Deploy to ${{ job.environment }}"
 
-      - name: Print repo and environment variable
+      - name: Ensure SERVICE_NAME is set (auto)
         run: |
-          echo "🔹 Repository-level SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
-          echo "🔹 Environment-level SERVICE_NAME (if set): ${{ vars.SERVICE_NAME }}"
-          echo ""
-          echo "If both exist, environment-level value overrides repo variable automatically."
+          if [ -z "${{ vars.SERVICE_NAME }}" ]; then
+            echo "ERROR: SERVICE_NAME variable is not set in environment ${{ job.environment }}." >&2
+            exit 1
+          fi
 
-      - name: Check secret exists
+      - name: Print SERVICE_NAME (auto)
         run: |
-          test -n "${{ secrets.MY_API_KEY }}" || (echo "❌ Secret MY_API_KEY saknas i ${{ job.environment }}" && exit 1)
+          echo "Deploying: ${{ vars.SERVICE_NAME }}"
+
+      - name: Check secret exists (auto)
+        run: |
+          test -n "${{ secrets.MY_API_KEY }}" || (echo "ERROR: Secret MY_API_KEY missing in ${{ job.environment }}" >&2; exit 1)
 
       - name: Echo secret directly (masked)
-        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
+        run: |
+          echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
       - name: Echo secret via env (masked)
         env:
           MY_API_KEY: ${{ secrets.MY_API_KEY }}
-        run: echo "From env: $MY_API_KEY"
+        run: |
+          echo "From env: $MY_API_KEY"
