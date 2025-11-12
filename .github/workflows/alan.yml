@@ -1,15 +1,21 @@
+name: Dummy Environment Print (manual)
+
 on:
-  push:
-    branches:
-      - main
-      - dev
-  workflow_dispatch:  
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Choose environment"
+        required: true
+        type: choice
+        options:
+          - DEVELOPMENT
+          - PRODUCTION
 
 jobs:
   print:
     runs-on: ubuntu-latest
-    environment: ${{ github.ref == 'refs/heads/main' && 'PRODUCTION' || 'DEVELOPMENT' }}
-
+    # kör i valt environment (måste finnas under Settings → Environments)
+    environment: ${{ inputs.env }}
     steps:
       - name: Print environment
-        run: echo "deploy to ${{ job.environment }}"
+        run: echo "Deploy to ${{ inputs.env }}"
