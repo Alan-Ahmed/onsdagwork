@@ -20,19 +20,24 @@ jobs:
       - name: Print chosen environment
         run: echo "Deploy to ${{ inputs.env }}"
 
+      - name: Print repo and environment variable
+        run: |
+          echo "🔹 Repository-level SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
+          echo "🔹 Environment-level SERVICE_NAME (if set): ${{ vars.SERVICE_NAME }}"
+          echo ""
+          echo "If both exist, environment-level value overrides repo variable automatically."
+
       - name: Check secret exists
         run: |
-          test -n "${{ secrets.MY_API_KEY }}" || (echo "Secret MY_API_KEY saknas i ${{ inputs.env }}" && exit 1)
+          test -n "${{ secrets.MY_API_KEY }}" || (echo "❌ Secret MY_API_KEY saknas i ${{ inputs.env }}" && exit 1)
 
       - name: Echo secret directly (masked)
-        run: |
-          echo "API KEY: ${{ secrets.MY_API_KEY }}"
+        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
       - name: Echo secret via env (masked)
         env:
           MY_API_KEY: ${{ secrets.MY_API_KEY }}
-        run: |
-          echo "From env: $MY_API_KEY"
+        run: echo "From env: $MY_API_KEY"
 
   print-auto:
     if: github.event_name == 'push'
@@ -42,16 +47,21 @@ jobs:
       - name: Print auto environment
         run: echo "Deploy to ${{ job.environment }}"
 
+      - name: Print repo and environment variable
+        run: |
+          echo "🔹 Repository-level SERVICE_NAME: ${{ vars.SERVICE_NAME }}"
+          echo "🔹 Environment-level SERVICE_NAME (if set): ${{ vars.SERVICE_NAME }}"
+          echo ""
+          echo "If both exist, environment-level value overrides repo variable automatically."
+
       - name: Check secret exists
         run: |
-          test -n "${{ secrets.MY_API_KEY }}" || (echo "Secret MY_API_KEY saknas i ${{ job.environment }}" && exit 1)
+          test -n "${{ secrets.MY_API_KEY }}" || (echo "❌ Secret MY_API_KEY saknas i ${{ job.environment }}" && exit 1)
 
       - name: Echo secret directly (masked)
-        run: |
-          echo "API KEY: ${{ secrets.MY_API_KEY }}"
+        run: echo "API KEY: ${{ secrets.MY_API_KEY }}"
 
       - name: Echo secret via env (masked)
         env:
           MY_API_KEY: ${{ secrets.MY_API_KEY }}
-        run: |
-          echo "From env: $MY_API_KEY"
+        run: echo "From env: $MY_API_KEY"
