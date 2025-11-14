@@ -1,0 +1,94 @@
+name: 05 - Smart Multi-Stage CI/CD
+
+on:
+  push:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Run tests
+        run: dotnet test MyService.Tests/MyService.Tests.csproj --configuration Release --no-build
+
+  deploy-dev:
+    name: Deploy to dev
+    runs-on: ubuntu-latest
+    needs: test
+    if: needs.test.result == 'success'
+    environment:
+      name: dev   # <-- VS Code accepterar detta
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Publish application
+        run: dotnet publish MyService.Api/MyService.Api.csproj -c Release -o ./out
+
+      - name: Simulate dev deployment
+        env:
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+        run: |
+          echo "deploying: ${SERVICE_NAME}"
+          echo "environment: ${{ github.environment }}"
+          echo "Using ./out for DEV..."
+          echo "✅ Deployment completed successfully (dev)"
+
+  deploy-prod:
+    name: Deploy to prod
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
+    environment:
+      name: prod  # <-- VS Code accepterar detta
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Publish application
+        run: dotnet publish MyService.Api/MyService.Api.csproj -c Release -o ./out
+
+      - name: Simulate prod deployment
+        env:
+          SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+          PROD_API_KEY: ${{ secrets.PROD_API_KEY }}
+        run: |
+          echo "deploying: ${SERVICE_NAME}"
+          echo "environment: ${{ github.environment }}"
+          echo "Using PROD_API_KEY=${PROD_API_KEY}"
+          echo "Using ./out for PROD..."
+          echo "✅ Deployment completed successfully (prod)"
