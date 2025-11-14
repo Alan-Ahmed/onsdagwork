@@ -41,19 +41,24 @@ jobs:
         run: dotnet restore
 
       - name: Run tests
-        run: dotnet test MyService.Tests/MyService.Tests.csproj --configuration Release --no-build
+        run: dotnet test --configuration Release
 
   deploy-dev:
-    name: Deploy to dev
+    name: Deploy to DEVELOPMENT
     runs-on: ubuntu-latest
     needs: test
     if: needs.test.result == 'success'
     environment:
-      name: dev   # <-- VS Code accepterar detta
+      name: DEVELOPMENT
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
       - name: Publish application
         run: dotnet publish MyService.Api/MyService.Api.csproj -c Release -o ./out
@@ -61,23 +66,30 @@ jobs:
       - name: Simulate dev deployment
         env:
           SERVICE_NAME: ${{ vars.SERVICE_NAME }}
+          MY_API_KEY: ${{ secrets.MY_API_KEY }}
         run: |
           echo "deploying: ${SERVICE_NAME}"
           echo "environment: ${{ github.environment }}"
-          echo "Using ./out for DEV..."
+          echo "Using MY_API_KEY=${MY_API_KEY}"
+          echo "Using ./out for DEVELOPMENT..."
           echo "✅ Deployment completed successfully (dev)"
 
   deploy-prod:
-    name: Deploy to prod
+    name: Deploy to PRODUCTION
     runs-on: ubuntu-latest
     needs: test
     if: github.ref == 'refs/heads/main' && needs.test.result == 'success'
     environment:
-      name: prod  # <-- VS Code accepterar detta
+      name: PRODUCTION
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
 
       - name: Publish application
         run: dotnet publish MyService.Api/MyService.Api.csproj -c Release -o ./out
@@ -85,10 +97,10 @@ jobs:
       - name: Simulate prod deployment
         env:
           SERVICE_NAME: ${{ vars.SERVICE_NAME }}
-          PROD_API_KEY: ${{ secrets.PROD_API_KEY }}
+          MY_API_KEY: ${{ secrets.MY_API_KEY }}
         run: |
           echo "deploying: ${SERVICE_NAME}"
           echo "environment: ${{ github.environment }}"
-          echo "Using PROD_API_KEY=${PROD_API_KEY}"
-          echo "Using ./out for PROD..."
+          echo "Using MY_API_KEY=${MY_API_KEY}"
+          echo "Using ./out for PRODUCTION..."
           echo "✅ Deployment completed successfully (prod)"
